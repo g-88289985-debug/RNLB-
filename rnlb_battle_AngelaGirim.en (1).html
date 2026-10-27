@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Redox Number Line Battle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0B1E3D;
+    --navy2:#13284F;
+    --navy3:#1B3564;
+    --yellow:#FFD23F;
+    --green:#27AE60;
+    --green-dark:#1E8449;
+    --red:#E63946;
+    --red-dark:#B92D39;
+    --cyan:#4ECDC4;
+    --white:#F7F9FC;
+    --ink:#0B1E3D;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: radial-gradient(120% 140% at 50% -10%, #1B3564 0%, #0B1E3D 55%, #071527 100%);
+    color:var(--white);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    padding:18px 12px 40px;
+  }
+  .app{ width:100%; max-width:760px; }
+
+  /* ---- HEADER ---- */
+  .title-row{
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    margin-bottom:14px; text-align:center;
+  }
+  .title-row h1{
+    font-family:'Baloo 2', sans-serif;
+    font-weight:800;
+    font-size:clamp(22px,5.2vw,34px);
+    letter-spacing:0.5px;
+    margin:0;
+    background:linear-gradient(180deg,#FFE985 0%, var(--yellow) 60%, #E8A800 100%);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+    text-shadow:0 3px 0 rgba(0,0,0,0.25);
+  }
+  .bolt{ font-size:26px; filter:drop-shadow(0 2px 2px rgba(0,0,0,.4)); }
+
+  /* ---- HUD ---- */
+  .hud{
+    display:flex; align-items:center; justify-content:space-between;
+    background:var(--navy2);
+    border:2px solid var(--navy3);
+    border-radius:14px;
+    padding:10px 16px;
+    margin-bottom:16px;
+    font-family:'Baloo 2',sans-serif;
+    font-size:15px;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .hud .stat{ display:flex; align-items:center; gap:6px; }
+  .hud .stat b{ color:var(--yellow); font-size:17px; }
+  .hearts span{ font-size:16px; margin-left:1px; }
+
+  /* ---- NUMBER LINE ---- */
+  .numline-wrap{
+    background:var(--navy2);
+    border:2px solid var(--navy3);
+    border-radius:16px;
+    padding:16px 16px 22px;
+    margin-bottom:18px;
+  }
+  .numline-labels{
+    display:flex; justify-content:space-between; font-size:11px;
+    font-weight:700; letter-spacing:0.4px; margin-bottom:6px;
+  }
+  .numline-labels .neg{ color:#FF8A8A; }
+  .numline-labels .pos{ color:#7CF0B2; }
+  .track-outer{ position:relative; height:14px; margin:26px 6px 30px; }
+  .track{
+    position:absolute; top:0; left:0; right:0; height:14px; border-radius:8px;
+    background:linear-gradient(90deg,#E63946 0%, #F4A825 25%, #FFE985 50%, #4ECDC4 65%, #27AE60 100%);
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.35);
+  }
+  .tick{
+    position:absolute; top:-6px; width:2px; height:26px; background:rgba(255,255,255,0.35);
+  }
+  .tick-label{
+    position:absolute; top:20px; font-size:10px; color:#B9C6E3; transform:translateX(-50%);
+    white-space:nowrap; font-weight:600;
+  }
+  .refzero{
+    position:absolute; top:-14px; width:2px; height:42px; background:#fff;
+  }
+  .marker{
+    position:absolute; top:-13px; width:26px; height:26px; border-radius:50%;
+    transform:translateX(-50%);
+    display:flex; align-items:center; justify-content:center;
+    font-size:13px; font-weight:800; color:#0B1E3D;
+    border:3px solid #0B1E3D;
+    box-shadow:0 3px 8px rgba(0,0,0,0.4);
+    transition: left 0.9s cubic-bezier(.34,1.56,.64,1), opacity .4s;
+    opacity:0;
+    z-index:3;
+  }
+  .marker.show{ opacity:1; }
+  .marker-tag{
+    position:absolute; top:-46px; transform:translateX(-50%);
+    background:var(--navy); border:2px solid; border-radius:8px;
+    padding:2px 7px; font-size:11px; font-weight:700; white-space:nowrap;
+    transition:left 0.9s cubic-bezier(.34,1.56,.64,1), opacity .4s;
+    opacity:0; z-index:3;
+  }
+  .marker-tag.show{ opacity:1; }
+
+  /* ---- STEP DOTS ---- */
+  .steps{
+    display:flex; justify-content:center; gap:10px; margin-bottom:16px;
+  }
+  .step-dot{
+    display:flex; align-items:center; gap:6px;
+    background:var(--navy2); border:2px solid var(--navy3);
+    border-radius:20px; padding:5px 12px 5px 6px;
+    font-size:11px; font-weight:700; color:#7C8CB0;
+    transition:all .3s;
+  }
+  .step-dot .num{
+    width:20px; height:20px; border-radius:50%; background:var(--navy3);
+    display:flex; align-items:center; justify-content:center; font-size:11px; color:#7C8CB0;
+  }
+  .step-dot.active{ border-color:var(--yellow); color:var(--yellow); background:#2A3D6B; }
+  .step-dot.active .num{ background:var(--yellow); color:var(--navy); }
+  .step-dot.done{ color:var(--green); border-color:var(--green); }
+  .step-dot.done .num{ background:var(--green); color:#fff; }
+
+  /* ---- ARENA ---- */
+  .arena{
+    display:flex; gap:14px; align-items:stretch; margin-bottom:16px;
+    position:relative;
+  }
+  .vs-badge{
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    background:var(--yellow); color:var(--navy); font-family:'Baloo 2',sans-serif;
+    font-weight:800; font-size:15px; padding:8px 10px; border-radius:50%;
+    border:3px solid var(--navy); z-index:5; box-shadow:0 4px 10px rgba(0,0,0,0.4);
+  }
+  .card{
+    flex:1; background:var(--navy2); border:3px solid var(--navy3); border-radius:16px;
+    padding:16px 12px; text-align:center; position:relative; overflow:hidden;
+    transition:transform .3s, border-color .3s, box-shadow .3s;
+    cursor:default;
+  }
+  .card.clickable{ cursor:pointer; }
+  .card.clickable:hover{ transform:translateY(-3px); border-color:var(--cyan); }
+  .card.correct{ border-color:var(--green); box-shadow:0 0 0 3px rgba(39,174,96,0.35); }
+  .card.wrong{ border-color:var(--red); animation:shake .4s; }
+  @keyframes shake{
+    0%,100%{transform:translateX(0);} 25%{transform:translateX(-6px);} 75%{transform:translateX(6px);}
+  }
+  .card .formula{
+    font-family:'Baloo 2',sans-serif; font-weight:700; font-size:clamp(15px,4vw,19px);
+    color:var(--yellow); margin-bottom:6px;
+  }
+  .card .eo{
+    display:inline-block; background:var(--navy); border-radius:8px; padding:3px 10px;
+    font-size:13px; font-weight:700; color:var(--cyan); margin-bottom:10px;
+  }
+  .card .role-badge{
+    display:inline-block; font-family:'Baloo 2',sans-serif; font-size:12px; font-weight:700;
+    padding:4px 10px; border-radius:20px; margin-top:6px;
+  }
+  .role-badge.red-badge{ background:var(--red); color:#fff; }
+  .role-badge.green-badge{ background:var(--green); color:#fff; }
+
+  .keepflip-btns{ display:flex; gap:8px; margin-top:12px; }
+  .kf-btn{
+    flex:1; font-family:'Baloo 2',sans-serif; font-weight:800; font-size:13px;
+    padding:9px 4px; border-radius:10px; border:none; cursor:pointer;
+    transition:transform .15s, filter .15s;
+  }
+  .kf-btn:active{ transform:scale(0.94); }
+  .kf-btn.keep{ background:var(--green); color:#fff; }
+  .kf-btn.flip{ background:var(--red); color:#fff; }
+  .kf-btn:disabled{ opacity:0.5; cursor:not-allowed; }
+
+  .eqn-final{
+    margin-top:10px; background:var(--navy); border:2px dashed var(--cyan); border-radius:10px;
+    padding:8px 6px; font-size:clamp(13px,3.6vw,15px); font-weight:700; color:#fff;
+    opacity:0; transform:translateY(6px); transition:opacity .5s, transform .5s;
+  }
+  .eqn-final.show{ opacity:1; transform:translateY(0); }
+
+  /* ---- PROMPT / CONTROLS ---- */
+  .prompt-box{
+    background:var(--navy2); border:2px solid var(--navy3); border-radius:14px;
+    padding:14px 16px; text-align:center; margin-bottom:14px;
+  }
+  .prompt-box p{ margin:0; font-size:15px; font-weight:600; line-height:1.5; }
+  .prompt-box .sub{ font-size:12.5px; color:#9FB0D6; margin-top:4px; font-weight:500;}
+
+  .feedback{
+    text-align:center; font-family:'Baloo 2',sans-serif; font-weight:700; font-size:15px;
+    min-height:22px; margin-bottom:10px;
+  }
+  .feedback.good{ color:var(--green); }
+  .feedback.bad{ color:var(--red); }
+
+  .btn-row{ display:flex; justify-content:center; gap:10px; margin-top:6px; flex-wrap:wrap;}
+  .primary-btn{
+    font-family:'Baloo 2',sans-serif; font-weight:800; font-size:15px;
+    background:linear-gradient(180deg,#FFE985,var(--yellow));
+    color:var(--navy); border:none; border-radius:12px; padding:12px 26px;
+    cursor:pointer; box-shadow:0 4px 0 #B98600; transition:transform .12s, box-shadow .12s;
+  }
+  .primary-btn:hover{ transform:translateY(-1px); }
+  .primary-btn:active{ transform:translateY(2px); box-shadow:0 2px 0 #B98600; }
+  .ghost-btn{
+    font-family:'Baloo 2',sans-serif; font-weight:700; font-size:13px;
+    background:transparent; color:var(--cyan); border:2px solid var(--cyan); border-radius:12px;
+    padding:9px 18px; cursor:pointer;
+  }
+
+  /* ---- START / GAMEOVER ---- */
+  .panel{
+    background:var(--navy2); border:2px solid var(--navy3); border-radius:18px;
+    padding:26px 20px; text-align:center;
+  }
+  .panel h2{ font-family:'Baloo 2',sans-serif; color:var(--yellow); margin-top:0; font-size:22px; }
+  .howto{ text-align:left; background:var(--navy); border-radius:12px; padding:14px 16px; margin:16px 0; }
+  .howto .step{ display:flex; gap:10px; margin-bottom:10px; align-items:flex-start; }
+  .howto .step:last-child{ margin-bottom:0; }
+  .howto .num-badge{
+    flex-shrink:0; width:26px; height:26px; border-radius:50%; background:var(--yellow); color:var(--navy);
+    font-family:'Baloo 2',sans-serif; font-weight:800; display:flex; align-items:center; justify-content:center; font-size:13px;
+  }
+  .howto .step b{ display:block; font-size:13.5px; color:var(--white); }
+  .howto .step span{ font-size:12.5px; color:#9FB0D6; }
+
+  .final-score{ font-family:'Baloo 2',sans-serif; font-size:42px; color:var(--yellow); margin:10px 0 0; }
+  .final-sub{ color:#9FB0D6; font-size:13px; margin-bottom:6px; }
+
+  .hidden{ display:none !important; }
+  footer{ text-align:center; font-size:11px; color:#5C6B8F; margin-top:20px; }
+
+  @media (max-width:480px){
+    .arena{ flex-direction:column; }
+    .vs-badge{ position:static; transform:none; margin:2px auto; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="title-row">
+    <span class="bolt">⚡</span>
+    <h1>REDOX NUMBER LINE BATTLE</h1>
+    <span class="bolt">⚡</span>
+  </div>
+
+  <!-- START SCREEN -->
+  <div id="startPanel" class="panel">
+    <h2>🔋 Ready to Battle?</h2>
+    <p style="font-size:13.5px;color:#C7D3EE;">Compare E° values, decide KEEP or FLIP, and write the half-equation correctly!</p>
+    <div class="howto">
+      <div class="step"><div class="num-badge">1</div><div><b>COMPARE</b><span>Compare the E° values on the Number Line.</span></div></div>
+      <div class="step"><div class="num-badge">2</div><div><b>DECIDE</b><span>Determine the direction of reaction — oxidation or reduction.</span></div></div>
+      <div class="step"><div class="num-badge">3</div><div><b>KEEP / FLIP</b><span>Decide whether each equation should be KEEP or FLIP.</span></div></div>
+      <div class="step"><div class="num-badge">4</div><div><b>WRITE</b><span>See the correct half-equation revealed!</span></div></div>
+    </div>
+    <button class="primary-btn" onclick="startGame()">START BATTLE 🚀</button>
+  </div>
+
+  <!-- GAME SCREEN -->
+  <div id="gamePanel" class="hidden">
+    <div class="hud">
+      <div class="stat">🏆 Score: <b id="scoreVal">0</b></div>
+      <div class="stat">🔥 Streak: <b id="streakVal">0</b></div>
+      <div class="stat">Round: <b id="roundVal">1</b></div>
+      <div class="stat hearts" id="heartsVal">❤️❤️❤️</div>
+    </div>
+
+    <div class="numline-wrap">
+      <div class="numline-labels"><span class="neg">◀ MORE NEGATIVE (Oxidation)</span><span class="pos">MORE POSITIVE (Reduction) ▶</span></div>
+      <div class="track-outer" id="trackOuter">
+        <div class="track"></div>
+        <!-- ticks injected by JS -->
+      </div>
+    </div>
+
+    <div class="steps">
+      <div class="step-dot" id="dotCompare"><div class="num">1</div>COMPARE</div>
+      <div class="step-dot" id="dotDecide"><div class="num">2</div>DECIDE</div>
+      <div class="step-dot" id="dotKeepflip"><div class="num">3</div>KEEP/FLIP</div>
+      <div class="step-dot" id="dotWrite"><div class="num">4</div>WRITE</div>
+    </div>
+
+    <div class="arena" id="arena">
+      <div class="vs-badge">VS</div>
+      <div class="card" id="cardA">
+        <div class="formula" id="formulaA">--</div>
+        <div class="eo" id="eoA">E° = -- V</div>
+        <div id="roleA"></div>
+        <div id="kfA"></div>
+        <div class="eqn-final" id="eqnA"></div>
+      </div>
+      <div class="card" id="cardB">
+        <div class="formula" id="formulaB">--</div>
+        <div class="eo" id="eoB">E° = -- V</div>
+        <div id="roleB"></div>
+        <div id="kfB"></div>
+        <div class="eqn-final" id="eqnB"></div>
+      </div>
+    </div>
+
+    <div class="feedback" id="feedback"></div>
+
+    <div class="prompt-box" id="promptBox">
+      <p id="promptText">Compare the E° values of both half-cells above.</p>
+      <div class="sub" id="promptSub"></div>
+    </div>
+
+    <div class="btn-row" id="btnRow">
+      <button class="primary-btn" onclick="advanceFromCompare()">CONTINUE →</button>
+    </div>
+  </div>
+
+  <!-- GAME OVER SCREEN -->
+  <div id="overPanel" class="hidden panel">
+    <h2>⚔️ Battle Over!</h2>
+    <div class="final-score" id="finalScore">0</div>
+    <div class="final-sub">points earned after <span id="finalRounds">0</span> rounds</div>
+    <button class="primary-btn" onclick="startGame()">PLAY AGAIN 🔁</button>
+  </div>
+
+  <footer>Redox Number Line Battle (RNLB) — Compare → Decide → KEEP/FLIP → Write<br>Prepared by Angela Anak Grim</footer>
+</div>
+
+<script>
+const HALF_CELLS = [
+  {f:"K⁺(aq) + e⁻ ⇌ K(s)", eo:-2.92, ox:"K⁺(aq)", red:"K(s)", short:"K⁺/K"},
+  {f:"Ca²⁺(aq) + 2e⁻ ⇌ Ca(s)", eo:-2.87, ox:"Ca²⁺(aq)", red:"Ca(s)", short:"Ca²⁺/Ca"},
+  {f:"Na⁺(aq) + e⁻ ⇌ Na(s)", eo:-2.71, ox:"Na⁺(aq)", red:"Na(s)", short:"Na⁺/Na"},
+  {f:"Mg²⁺(aq) + 2e⁻ ⇌ Mg(s)", eo:-2.38, ox:"Mg²⁺(aq)", red:"Mg(s)", short:"Mg²⁺/Mg"},
+  {f:"Al³⁺(aq) + 3e⁻ ⇌ Al(s)", eo:-1.66, ox:"Al³⁺(aq)", red:"Al(s)", short:"Al³⁺/Al"},
+  {f:"Zn²⁺(aq) + 2e⁻ ⇌ Zn(s)", eo:-0.76, ox:"Zn²⁺(aq)", red:"Zn(s)", short:"Zn²⁺/Zn"},
+  {f:"Fe²⁺(aq) + 2e⁻ ⇌ Fe(s)", eo:-0.44, ox:"Fe²⁺(aq)", red:"Fe(s)", short:"Fe²⁺/Fe"},
+  {f:"Pb²⁺(aq) + 2e⁻ ⇌ Pb(s)", eo:-0.13, ox:"Pb²⁺(aq)", red:"Pb(s)", short:"Pb²⁺/Pb"},
+  {f:"2H⁺(aq) + 2e⁻ ⇌ H₂(g)", eo:0.00, ox:"2H⁺(aq)", red:"H₂(g)", short:"2H⁺/H₂"},
+  {f:"Cu²⁺(aq) + 2e⁻ ⇌ Cu(s)", eo:0.34, ox:"Cu²⁺(aq)", red:"Cu(s)", short:"Cu²⁺/Cu"},
+  {f:"Ag⁺(aq) + e⁻ ⇌ Ag(s)", eo:0.80, ox:"Ag⁺(aq)", red:"Ag(s)", short:"Ag⁺/Ag"},
+  {f:"Br₂(aq) + 2e⁻ ⇌ 2Br⁻(aq)", eo:1.07, ox:"Br₂(aq)", red:"2Br⁻(aq)", short:"Br₂/Br⁻"},
+  {f:"Cl₂(aq) + 2e⁻ ⇌ 2Cl⁻(aq)", eo:1.36, ox:"Cl₂(aq)", red:"2Cl⁻(aq)", short:"Cl₂/Cl⁻"},
+];
+const LINE_MIN=-3.0, LINE_MAX=1.5;
+
+let score=0, streak=0, lives=3, round=1;
+let pairA=null, pairB=null, higherIsA=null;
+let lastPairKey="";
+let roundPerfect=true;
+let step="compare"; // compare, decide, keepflip, write
+let decideAnswered=false;
+let kfAnswered={A:false,B:false};
+
+function pct(eo){ return ((eo-LINE_MIN)/(LINE_MAX-LINE_MIN))*100; }
+
+function buildTicks(){
+  const outer=document.getElementById('trackOuter');
+  outer.querySelectorAll('.tick,.tick-label,.refzero').forEach(e=>e.remove());
+  const ticks=[-3,-2,-1,0,0.5,1];
+  ticks.forEach(v=>{
+    const t=document.createElement('div');
+    t.className='tick';
+    t.style.left=pct(v)+'%';
+    outer.appendChild(t);
+    const l=document.createElement('div');
+    l.className='tick-label';
+    l.style.left=pct(v)+'%';
+    l.textContent=(v>0?'+':'')+v.toFixed(v===0?0:1);
+    outer.appendChild(l);
+  });
+  const z=document.createElement('div');
+  z.className='refzero';
+  z.style.left=pct(0)+'%';
+  outer.appendChild(z);
+}
+
+function pickPair(){
+  let i,j,key;
+  do{
+    i=Math.floor(Math.random()*HALF_CELLS.length);
+    j=Math.floor(Math.random()*HALF_CELLS.length);
+    key=[i,j].sort().join('-');
+  } while(i===j || key===lastPairKey);
+  lastPairKey=key;
+  return [HALF_CELLS[i], HALF_CELLS[j]];
+}
+
+function startGame(){
+  score=0; streak=0; lives=3; round=1;
+  document.getElementById('startPanel').classList.add('hidden');
+  document.getElementById('overPanel').classList.add('hidden');
+  document.getElementById('gamePanel').classList.remove('hidden');
+  buildTicks();
+  newRound();
+}
+
+function updateHUD(){
+  document.getElementById('scoreVal').textContent=score;
+  document.getElementById('streakVal').textContent=streak;
+  document.getElementById('roundVal').textContent=round;
+  document.getElementById('heartsVal').textContent='❤️'.repeat(lives)+'🖤'.repeat(3-lives);
+}
+
+function setStepDots(active){
+  const order=['compare','decide','keepflip','write'];
+  const ids={compare:'dotCompare',decide:'dotDecide',keepflip:'dotKeepflip',write:'dotWrite'};
+  const activeIdx=order.indexOf(active);
+  order.forEach((s,idx)=>{
+    const el=document.getElementById(ids[s]);
+    el.classList.remove('active','done');
+    if(idx<activeIdx) el.classList.add('done');
+    else if(idx===activeIdx) el.classList.add('active');
+  });
+}
+
+function clearMarkers(){
+  document.getElementById('trackOuter').querySelectorAll('.marker,.marker-tag').forEach(e=>e.remove());
+}
+
+function newRound(){
+  roundPerfect=true;
+  decideAnswered=false;
+  kfAnswered={A:false,B:false};
+  const [p1,p2]=pickPair();
+  pairA=p1; pairB=p2;
+  higherIsA = pairA.eo > pairB.eo;
+
+  document.getElementById('formulaA').textContent=pairA.short;
+  document.getElementById('formulaB').textContent=pairB.short;
+  document.getElementById('eoA').textContent='E° = '+(pairA.eo>0?'+':'')+pairA.eo.toFixed(2)+' V';
+  document.getElementById('eoB').textContent='E° = '+(pairB.eo>0?'+':'')+pairB.eo.toFixed(2)+' V';
+  document.getElementById('roleA').innerHTML='';
+  document.getElementById('roleB').innerHTML='';
+  document.getElementById('kfA').innerHTML='';
+  document.getElementById('kfB').innerHTML='';
+  document.getElementById('eqnA').classList.remove('show');
+  document.getElementById('eqnB').classList.remove('show');
+  document.getElementById('eqnA').textContent='';
+  document.getElementById('eqnB').textContent='';
+  document.getElementById('cardA').className='card';
+  document.getElementById('cardB').className='card';
+  document.getElementById('feedback').textContent='';
+  document.getElementById('feedback').className='feedback';
+
+  clearMarkers();
+  step='compare';
+  setStepDots('compare');
+  updateHUD();
+
+  document.getElementById('promptText').textContent='Step 1: COMPARE — compare the E° values of both half-cells.';
+  document.getElementById('promptSub').textContent='Look at where each E° value sits on the Number Line above.';
+  document.getElementById('btnRow').innerHTML='<button class="primary-btn" onclick="advanceFromCompare()">CONTINUE →</button>';
+
+  // animate markers in after short delay
+  setTimeout(()=>{
+    placeMarker('A', pairA.eo, pairA.short);
+    placeMarker('B', pairB.eo, pairB.short);
+  }, 200);
+}
+
+function placeMarker(tag, eo, label){
+  const outer=document.getElementById('trackOuter');
+  const m=document.createElement('div');
+  m.className='marker';
+  m.id='marker'+tag;
+  m.style.background= tag==='A' ? '#FF8A8A' : '#7CF0B2';
+  m.style.left='50%';
+  m.textContent=tag;
+  outer.appendChild(m);
+
+  const tg=document.createElement('div');
+  tg.className='marker-tag';
+  tg.id='markerTag'+tag;
+  tg.style.left='50%';
+  tg.style.borderColor= tag==='A' ? '#FF8A8A' : '#7CF0B2';
+  tg.style.color= tag==='A' ? '#FF8A8A' : '#7CF0B2';
+  tg.textContent=label;
+  outer.appendChild(tg);
+
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      m.style.left=pct(eo)+'%';
+      m.classList.add('show');
+      tg.style.left=pct(eo)+'%';
+      tg.classList.add('show');
+    });
+  });
+}
+
+function advanceFromCompare(){
+  step='decide';
+  setStepDots('decide');
+  document.getElementById('promptText').textContent='Step 2: DECIDE — which one undergoes REDUCTION?';
+  document.getElementById('promptSub').textContent='Click the half-cell card that undergoes reduction (the more positive E° value).';
+  document.getElementById('btnRow').innerHTML='';
+  document.getElementById('cardA').classList.add('clickable');
+  document.getElementById('cardB').classList.add('clickable');
+  document.getElementById('cardA').onclick=()=>answerDecide('A');
+  document.getElementById('cardB').onclick=()=>answerDecide('B');
+}
+
+function answerDecide(choice){
+  if(decideAnswered) return;
+  decideAnswered=true;
+  document.getElementById('cardA').classList.remove('clickable');
+  document.getElementById('cardB').classList.remove('clickable');
+  document.getElementById('cardA').onclick=null;
+  document.getElementById('cardB').onclick=null;
+
+  const correctIsA = higherIsA;
+  const correct = (choice==='A' && correctIsA) || (choice==='B' && !correctIsA);
+  const cardEl = document.getElementById('card'+choice);
+  const otherEl = document.getElementById('card'+(choice==='A'?'B':'A'));
+
+  if(correct){
+    cardEl.classList.add('correct');
+    otherEl.classList.add('wrong');
+    score+=10;
+    showFeedback(true,'Correct! The more positive E° = REDUCTION (cathode).');
+  } else {
+    cardEl.classList.add('wrong');
+    otherEl.classList.add('correct');
+    lives=Math.max(0,lives-1);
+    roundPerfect=false;
+    showFeedback(false,'Not quite. The more positive E° should be REDUCTION.');
+  }
+
+  // label roles
+  const redTag = correctIsA ? 'A' : 'B';
+  const oxTag = correctIsA ? 'B' : 'A';
+  document.getElementById('role'+redTag).innerHTML='<span class="role-badge green-badge">REDUCTION (Cathode)</span>';
+  document.getElementById('role'+oxTag).innerHTML='<span class="role-badge red-badge">OXIDATION (Anode)</span>';
+
+  updateHUD();
+
+  if(lives<=0){
+    setTimeout(gameOver, 1400);
+    return;
+  }
+  setTimeout(advanceFromDecide, 1300);
+}
+
+function advanceFromDecide(){
+  step='keepflip';
+  setStepDots('keepflip');
+  document.getElementById('feedback').textContent='';
+  document.getElementById('feedback').className='feedback';
+  document.getElementById('promptText').textContent='Step 3: KEEP / FLIP — decide each equation.';
+  document.getElementById('promptSub').textContent='RIGHT (reduction) = KEEP · LEFT (oxidation) = FLIP';
+  document.getElementById('btnRow').innerHTML='';
+
+  ['A','B'].forEach(tag=>{
+    const html = `<div class="keepflip-btns">
+      <button class="kf-btn keep" onclick="answerKeepFlip('${tag}','keep')">KEEP ⇌</button>
+      <button class="kf-btn flip" onclick="answerKeepFlip('${tag}','flip')">FLIP →</button>
+    </div>`;
+    document.getElementById('kf'+tag).innerHTML=html;
+  });
+}
+
+function answerKeepFlip(tag, choice){
+  if(kfAnswered[tag]) return;
+  kfAnswered[tag]=true;
+
+  const isReduction = (tag==='A') ? higherIsA : !higherIsA;
+  const correctChoice = isReduction ? 'keep' : 'flip';
+  const correct = choice===correctChoice;
+
+  const btns = document.getElementById('kf'+tag).querySelectorAll('.kf-btn');
+  btns.forEach(b=>b.disabled=true);
+
+  const cardEl = document.getElementById('card'+tag);
+  if(correct){
+    score+=10;
+    cardEl.classList.add('correct');
+    showFeedback(true, tag+': Correct! '+(correctChoice==='keep'?'KEEP — direction stays the same.':'FLIP — direction is reversed.'));
+  } else {
+    lives=Math.max(0,lives-1);
+    roundPerfect=false;
+    cardEl.classList.remove('correct');
+    cardEl.classList.add('wrong');
+    showFeedback(false, tag+': It should be '+correctChoice.toUpperCase()+'.');
+  }
+  updateHUD();
+
+  const pairObj = (tag==='A') ? pairA : pairB;
+  const eqEl = document.getElementById('eqn'+tag);
+  const finalEqn = isReduction
+    ? pairObj.ox+' + '+countE(pairObj)+'e⁻ → '+pairObj.red
+    : pairObj.red+' → '+pairObj.ox+' + '+countE(pairObj)+'e⁻';
+  eqEl.textContent=finalEqn;
+
+  if(kfAnswered.A && kfAnswered.B){
+    if(lives<=0){
+      setTimeout(gameOver, 1400);
+      return;
+    }
+    setTimeout(advanceToWrite, 900);
+  }
+}
+
+function countE(pairObj){
+  const m = pairObj.f.match(/(\d*)e⁻/);
+  return m && m[1] ? m[1] : '';
+}
+
+function showFeedback(good, msg){
+  const el=document.getElementById('feedback');
+  el.textContent = (good? '✅ ':'❌ ')+msg;
+  el.className='feedback '+(good?'good':'bad');
+}
+
+function advanceToWrite(){
+  step='write';
+  setStepDots('write');
+  document.getElementById('feedback').textContent='';
+  document.getElementById('promptText').textContent='Step 4: WRITE — the half-equation is revealed!';
+  document.getElementById('promptSub').textContent= roundPerfect ? 'PERFECT round! Bonus +5 points.' : 'Move on to the next round.';
+  document.getElementById('eqnA').classList.add('show');
+  document.getElementById('eqnB').classList.add('show');
+
+  if(roundPerfect){
+    score+=5; streak+=1;
+  } else {
+    streak=0;
+  }
+  updateHUD();
+
+  document.getElementById('btnRow').innerHTML='<button class="primary-btn" onclick="nextRound()">NEXT BATTLE →</button>';
+}
+
+function nextRound(){
+  round+=1;
+  newRound();
+}
+
+function gameOver(){
+  document.getElementById('gamePanel').classList.add('hidden');
+  document.getElementById('overPanel').classList.remove('hidden');
+  document.getElementById('finalScore').textContent=score;
+  document.getElementById('finalRounds').textContent=round;
+}
+</script>
+</body>
+</html>
